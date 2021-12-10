@@ -1,4 +1,4 @@
-function f = model(t,x,x_p,pars,infusion,varargin) %los_pars,
+function f = model(t,x,x_p,pars,infusion,varargin) 
 %% Parameters
 
 lit_pars      = pars(1:19);
