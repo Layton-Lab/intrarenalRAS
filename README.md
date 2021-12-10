@@ -9,6 +9,7 @@ To create Figs 3–8 from the manuscript, run the script Smith2021.m
 To run your own simulations, call run_model.m with the appropriate inputs.
 
 Smith2021.m
+
 Running this will create all figures from the manuscript by calling get_Figk.m (k = 3,…,8).
 Optional inputs can be specified by the user to
 (1)	Generate only select figures
@@ -17,6 +18,7 @@ Optional inputs can be specified by the user to
 (4)	Save desired figures as PDFs
 
 get_Figk.m (k = 3,…,8)
+
 Running this will generate Fig k from the manuscript
 User inputs:
 If k = 6 or 8, you need to specify the Ang II infusion parameters
