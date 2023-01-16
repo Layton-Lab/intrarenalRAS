@@ -1,5 +1,6 @@
+
 % Fig 7: sensitivity of the model steady state
-function [SSdata,test] = get_Fig7(delta)
+function [SSdata,test] = get_Fig9_R1(delta)
 
 % Don't infuse Ang II
 infusion.dose = 0; infusion.type = 'none';
@@ -30,7 +31,7 @@ num_vars = length(x0); x_p0 = zeros(num_vars,1);
 options = odeset('RelTol',1e-6,'AbsTol',1e-4);
 
 % Number of baseline parameters 
-p_index = 13;
+p_index = 15;
 
 % Initialize ,matrix to hold new SS for each parameter change
 SSdata = zeros(num_vars,p_index);
@@ -58,9 +59,8 @@ end
 %% Plot table
 
 % Parameter labels
-params = {'k_{int}','k_{rec}', 'k_{lys}','AT1R_{Gl}^{tot}','c_{chym}','c_{NEP}',...
-          'v_{max}','k_{AngI_{Pt}}','c_{ACE_{Pt}}','k_{AngI_{Tb}}','c_{ACE_{Tb}}',...
-          'S_{Tb}','k_{AGT}'};
+params = {'k_{int}','k_{rec}', 'k_{lys}', 'k_{meg}', 'k_{sec}', 'k_{diff}', 'AT1R_{Gl}^{tot}','c_{chym}','c_{NEP}',...
+          'v_{max}','k_{AngI_{Pt}}','c_{ACE_{Pt}}','k_{AngI_{Tb}}','c_{ACE_{Tb}}','k_{AGT}'};
 
 % Variable labels
 circRowNames = {'[AGT]_{circ}', '[Ang I]_{circ}','[Ang II]_{circ}',...
