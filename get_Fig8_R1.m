@@ -9,7 +9,7 @@ x0 = [load('model_SS.mat').SSdata];
 
 c = summer(8);
 
-figure(6)
+figure(8)
 
 subplot(2,3,[1,4])
 area((t_tot),comp_tot(:,1)+comp_tot(:,2)+comp_tot(:,3)+comp_tot(:,4),'facecolor',c(1,:),'linewidth',1.5);

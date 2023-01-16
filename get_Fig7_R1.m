@@ -40,7 +40,7 @@ fold_AngII_T_exo_sim_402 = S402(AngII_T_exo_ind,:)/S402(AngII_T_ind,1);
 
 c = summer(6);
 
-figure(6)
+figure(7)
 subplot(1,2,[1,2])
 hold on
 plot(t40,fold_AngII_T_sim_40,'linewidth',1.5,'color','k');

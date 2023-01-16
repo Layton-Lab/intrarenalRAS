@@ -52,7 +52,7 @@ fold_AngI_T_sim_noACEfb = S40_noACEfb(AngI_T_ind,:)/S40(AngI_T_ind,1);
 
 c = summer(6);
 
-figure(3)
+figure(4)
 subplot(2,3,1)
 plot(t40,fold_AGT_sim,'linewidth',1.5,'color','k');
 hold on
@@ -64,10 +64,10 @@ xlabel('Time (days)');
 ylabel('[AGT]_{circ} (ratio to control)');
 set(gca,'fontsize',14);
 xlim([0,13]);
-ttl = title('a','fontsize',20,'fontweight','bold');
-ttl.Units = 'Normalize'; 
-ttl.Position(1) = 0;
-ttl.HorizontalAlignment = 'left';  
+ttla = title('a','fontsize',20,'fontweight','bold');
+ttla.Units = 'Normalize'; 
+ttla.Position(1) = 0;
+ttla.HorizontalAlignment = 'left';  
 
 subplot(2,3,[2,3])
 a1=plot(t40,fold_PRA_sim,'linewidth',1.5,'color','k');

@@ -42,7 +42,7 @@ function [S,t,YP] = run_model(days,x0,D,units,inf_type,separate,varargin)
        
     x_p0 = zeros(num_vars,1);
     
-    options = odeset('RelTol',1e-6,'AbsTol',1e-4);
+    options = odeset('RelTol',1e-6,'AbsTol',1e-3);
     
     sol = ode15i(@(t,x,x_p) ...
                 model(t,x,x_p,pars,infusion,varargin_input{:}), ...

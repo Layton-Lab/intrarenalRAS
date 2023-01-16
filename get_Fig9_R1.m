@@ -100,7 +100,7 @@ test_Tb = test(23:29,:);
 test_Pv = test(30:33,:);
 test_WK = test(34:35,:);
 
-figure(7)
+figure(9)
 subplot(6,1,1)
 heatmap(params,circRowNames,test_circ,'Colormap',summer,...
     'MissingDataColor','w','MissingDataLabel','<1%',...

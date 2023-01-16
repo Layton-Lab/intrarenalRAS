@@ -99,7 +99,7 @@ names = {'Endogenous','Exogenous','Total'};
 c = summer(6);
 c2 = summer(4);
 
-figure(4)
+figure(5)
 subplot(1,2,1)
 b1 = plot(doses,AngII_circ_SC(:,1)/AngII_circ_SC(1,1),'color',c2(3,:),'linewidth',1.5);
 hold on
