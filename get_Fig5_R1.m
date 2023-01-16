@@ -1,4 +1,4 @@
-%% Fig 4: Ang II dose response (subcutaneous and intravenous)
+%% Fig 5: Ang II dose response (subcutaneous and intravenous)
 %% Subcutaneous data
 
 %%% ---- 80 ng/min (Shao et al. 2009, Shaoe et al. 2010)
@@ -54,7 +54,7 @@ AngII_circ_IV_SD = [4.229,13.03,29.221] - AngII_circ_IV;
 %% Subcutaneous simulations
 
 
-doses = [(0:0.1:0.9),(1:1:9),(10:10:90),(100:50:500)];
+doses = [(0:0.1:0.9),(1:1:9),(10:10:90),(100:50:500)]; 
 
 AngII_circ_SC = zeros(length(doses),2);
 
@@ -97,7 +97,7 @@ end
 
 names = {'Endogenous','Exogenous','Total'};
 c = summer(6);
-c2 =summer(4);
+c2 = summer(4);
 
 figure(4)
 subplot(1,2,1)
