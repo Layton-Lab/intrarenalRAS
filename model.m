@@ -2,24 +2,26 @@ function f = model(t,x,x_p,pars,infusion,varargin)
 %% Parameters
 
 lit_pars      = pars(1:19);
-base_pars     = pars(19+1:19+1+13);
-fb_pars       = pars(19+1+13:19+1+13+8);
-SS            = pars(19+1+13+8:end);
+base_pars     = pars(19+1:19+1+15);
+fb_pars       = pars(19+1+15:19+1+15+8);
+SS            = pars(19+1+15+8:end);
 
 %%% --- Baseline (fitted) parameters
 k_int         = base_pars(1);
 k_rec         = base_pars(2); 
 k_lys         = base_pars(3);
-AT1R_Gl_tot   = base_pars(4);
-c_chym        = base_pars(5); c_ACE_circ = 9*c_chym;
-c_NEP         = base_pars(6); c_ACE2     = 0.21*c_NEP;
-v_max         = base_pars(7);
-k_AngI_Pt     = base_pars(8);
-c_ACE_Pt      = base_pars(9);
-k_AngI_Tb     = base_pars(10);
-c_ACE_Tb      = base_pars(11);
-S_Tb          = base_pars(12);
-k_AGT         = base_pars(13);
+k_meg         = base_pars(4);
+k_trans       = base_pars(5);
+k_diff        = base_pars(6);
+AT1R_Gl_tot   = base_pars(7);
+c_chym        = base_pars(8); c_ACE_circ = 9*c_chym;
+c_NEP         = base_pars(9); c_ACE2     = 0.21*c_NEP;
+v_max         = base_pars(10);
+k_AngI_Pt     = base_pars(11);
+c_ACE_Pt      = base_pars(12);
+k_AngI_Tb     = base_pars(13);
+c_ACE_Tb      = base_pars(14);
+k_AGT         = base_pars(15);
 
 %%% --- Parameters from the literature 
 
@@ -39,9 +41,8 @@ V_Pv          = lit_pars(8);
 phi_RPF       = lit_pars(9)/W_K;
 FF            = lit_pars(10);
 phi_GFR       = FF*phi_RPF;
-phi_L         = (0.02/1.02)*phi_GFR; 
+phi_L         = 0.02*phi_GFR; 
 phi_U         = phi_L; 
-phi_Pt        = S_Tb*(phi_GFR-phi_U);
 phi_Pv        = phi_GFR - phi_U; 
 
 % AT1R binding kinetics
@@ -63,16 +64,18 @@ k_a           = fb_pars(1)*10^(-3);
 B_AT1R        = fb_pars(2);
 K_circ_ACE    = fb_pars(3);
 K_circ_AGT    = fb_pars(4)*10^2;
-K_Pt          = fb_pars(5);
-K_Tb          = fb_pars(6)*10^(-1);
+K_Pt          = fb_pars(5)*0.8; 
+K_Tb          = fb_pars(6)*10^(-1); 
 AT1R_circ_tot = fb_pars(7);
 AT1R_Pv_tot   = fb_pars(8);
+K_endo        = 0; 
 
 % Steady states 
 AT1R_AngII_memb_Gl_eq   = SS(1);
 AT1R_AngII_memb_Pt_eq   = SS(2);
 AT1R_AngII_memb_Tb_eq   = SS(3);
 AT1R_AngII_memb_circ_eq = SS(4);
+AngII_cell_Tb_eq        = SS(5);
 
 %% Optional inputs
 setNuTo1 = false;
@@ -82,9 +85,12 @@ for i = 1:length(varargin)
         K_circ_AGT    = 0;
         K_Pt          = 0;
         K_Tb          = 0;
+        K_endo        = 0;
+        setNuTo1      = true;
     elseif strcmp(varargin{i},'all_renal') % remove all intrarenal fb
         K_Pt = 0;
         K_Tb = 0;
+        K_endo = 0;
     elseif strcmp(varargin{i},'circ_ACE') % remove systemic ACE fb
         K_circ_ACE    = 0;
     elseif strcmp(varargin{i},'circ_AGT') % remove hepatic AGT fb
@@ -101,6 +107,10 @@ for i = 1:length(varargin)
         AT1R_AngII_memb_Tb_eq   = varargin{i+3};
         AT1R_AngII_memb_circ_eq = varargin{i+4};
         i = i+1;
+    elseif strcmp(varargin{i},'hypothesis2')
+        K_Pt = 0;
+        K_Tb = 0;
+        K_endo = 7400;
     end
 end
 %% Variables
@@ -240,11 +250,13 @@ if infusion.separate
     q_Gl = AT1R_AngII_memb_Gl_tot/AT1R_AngII_memb_Gl_eq;
     q_Pt = AT1R_AngII_memb_Pt_tot/AT1R_AngII_memb_Pt_eq;
     q_Tb = AT1R_AngII_memb_Tb_tot/AT1R_AngII_memb_Tb_eq;
+    q_endo = AngII_cell_Tb_tot/AngII_cell_Tb_eq;
 else
     q_circ = AT1R_AngII_memb_circ/AT1R_AngII_memb_circ_eq;
     q_Gl = AT1R_AngII_memb_Gl/AT1R_AngII_memb_Gl_eq;
     q_Pt = AT1R_AngII_memb_Pt/AT1R_AngII_memb_Pt_eq;
     q_Tb = AT1R_AngII_memb_Tb/AT1R_AngII_memb_Tb_eq;
+    q_endo = AngII_cell_Tb/AngII_cell_Tb_eq;
 end
 %% Model
 
@@ -255,21 +267,21 @@ f = zeros(length(x),1);
 f(1) = AGT_circ_p  - (k_AGT + fb_circ_AGT - PRA - v_AGT*AGT_circ);
 
 f(2) = AngI_circ_p - (PRA - (c_chym + c_ACE_circ + fb_circ_ACE + c_NEP + v_I)*AngI_circ...
-                   + (W_K/V_circ)*phi_L*(AngI_Isf_Pt + AngI_Isf_Gl)...
-                   + (W_K/V_circ)*((phi_RPF-2*phi_L-phi_U)*AngI_Pv - phi_RPF*AngI_circ));
+                   + (W_K/V_circ)*phi_L*(AngI_Isf_Pt)...
+                   + (W_K/V_circ)*((phi_RPF-phi_L-phi_U)*AngI_Pv - phi_RPF*AngI_circ)); 
 
 if infusion.separate
     f(3) = AngII_circ_p - ((c_chym + c_ACE_circ + fb_circ_ACE)*AngI_circ...  
                         - (c_ACE2 + v_II)*AngII_circ...
-                        + (W_K/V_circ)*phi_L*(AngII_Isf_Pt+AngII_Isf_Gl)...
-                        + (W_K/V_circ)*(phi_RPF-2*phi_L-phi_U)*AngII_Pv ...
+                        + (W_K/V_circ)*phi_L*(AngII_Isf_Pt)...
+                        + (W_K/V_circ)*(phi_RPF-phi_L-phi_U)*AngII_Pv ... 
                         - (W_K/V_circ)*phi_RPF*AngII_circ...
                         + k_diss*AT1R_AngII_memb_circ - k_ass*AT1R_memb_circ*AngII_circ);              
 else
     f(3) = AngII_circ_p - (K_AngII + (c_chym + c_ACE_circ + fb_circ_ACE)*AngI_circ...  
                         - (c_ACE2 + v_II)*AngII_circ...
-                        + (W_K/V_circ)*phi_L*(AngII_Isf_Pt+AngII_Isf_Gl)...
-                        + (W_K/V_circ)*(phi_RPF-2*phi_L-phi_U)*AngII_Pv ...
+                        + (W_K/V_circ)*phi_L*(AngII_Isf_Pt)...
+                        + (W_K/V_circ)*(phi_RPF-phi_L-phi_U)*AngII_Pv ... 
                         - (W_K/V_circ)*phi_RPF*AngII_circ...
                         + k_diss*AT1R_AngII_memb_circ - k_ass*AT1R_memb_circ*AngII_circ); 
 end
@@ -323,10 +335,10 @@ end
 
 %%% ----  Peritubular
 
-f(16) = AngI_Isf_Pt_p  - (k_AngI_Pt + (phi_Pt/V_Pt_Isf)*AngI_Fl_Tb...
+f(16) = AngI_Isf_Pt_p  - (k_AngI_Pt + (k_diff/V_Pt_Isf)*AngI_Fl_Tb...
                        - (c_ACE_Pt + (phi_Pv+phi_L)/V_Pt_Isf)*AngI_Isf_Pt);
                     
-f(17) = AngII_Isf_Pt_p - (c_ACE_Pt*AngI_Isf_Pt + (phi_Pt/V_Pt_Isf)*AngII_Fl_Tb ...
+f(17) = AngII_Isf_Pt_p - (c_ACE_Pt*AngI_Isf_Pt + k_trans*(V_Tb_Pt_cell/V_Pt_Isf)*AngII_cell_Tb ...
                        - ((phi_Pv+phi_L)/V_Pt_Isf)*AngII_Isf_Pt ...
                        + k_diss*AT1R_AngII_memb_Pt - k_ass*AngII_Isf_Pt*AT1R_memb_Pt);
                    
@@ -358,13 +370,20 @@ else
 end
 
 %%% ----  Tubular
+if  q_endo <= 1 
+    fb_endo = 0;
+elseif q_endo > 1
+    fb_endo = (K_endo*(q_endo-1));
+end
 
-f(23) = AngI_Fl_Tb_p  - (k_AngI_Tb + (phi_GFR/V_Tb_Fl)*AngI_circ ...
-                      - (c_ACE_Tb + (phi_U + phi_Pt)/V_Tb_Fl)*AngI_Fl_Tb);
+f(23) = AngI_Fl_Tb_p  - (k_AngI_Tb + fb_endo + (phi_GFR/V_Tb_Fl)*AngI_circ ...
+                      - (c_ACE_Tb + (phi_U + k_diff)/V_Tb_Fl)*AngI_Fl_Tb ...
+                      + (phi_L/V_Tb_Fl)*AngI_Isf_Gl); % 
                     
 f(24) = AngII_Fl_Tb_p - ((phi_GFR/V_Tb_Fl)*AngII_circ + c_ACE_Tb*AngI_Fl_Tb ...
-                      + k_diss*AT1R_AngII_memb_Tb - k_ass*AngII_Fl_Tb*AT1R_memb_Tb ...
-                      - ((phi_U + phi_Pt)/V_Tb_Fl)*AngII_Fl_Tb);
+                      + k_diss*AT1R_AngII_memb_Tb - k_ass*AngII_Fl_Tb*AT1R_memb_Tb - k_meg*AngII_Fl_Tb ...
+                      - ((phi_U)/V_Tb_Fl)*AngII_Fl_Tb...
+                      + (phi_L/V_Tb_Fl)*AngI_Isf_Gl);  
 
 f(25) = AT1R_AngII_memb_Tb_p - (k_ass*AngII_Fl_Tb*AT1R_memb_Tb ...
                              - (k_diss + k_int)*AT1R_AngII_memb_Tb);
@@ -373,7 +392,7 @@ f(26) = AT1R_AngII_cell_Tb_p - ((V_Tb_Fl/V_Tb_Pt_cell)*k_int*AT1R_AngII_memb_Tb 
                              + k_ass*AngII_cell_Tb*AT1R_cell_Tb - k_diss*AT1R_AngII_cell_Tb) ;
 
 f(27) = AngII_cell_Tb_p - (k_diss*AT1R_AngII_cell_Tb - k_ass*AngII_cell_Tb*AT1R_cell_Tb ...
-                        - k_lys*AngII_cell_Tb);
+                         + k_meg*(V_Tb_Fl/V_Tb_Pt_cell)*AngII_Fl_Tb - (k_trans + k_lys)*AngII_cell_Tb);
                     
 if infusion.separate                  
     f(28) = AT1R_memb_Tb_p - (fb_Tb + (V_Tb_Pt_cell/V_Tb_Fl)*k_rec*AT1R_cell_Tb ...
@@ -397,11 +416,11 @@ end
 
 f(30) = AngI_Pv_p - (((phi_RPF-phi_GFR-phi_L)/V_Pv)*AngI_circ ...
                   + (phi_Pv/V_Pv)*AngI_Isf_Pt ... 
-                  - (((phi_RPF-2*phi_L-phi_U)/V_Pv) + v_I)*AngI_Pv);
+                  - (((phi_RPF-phi_L-phi_U)/V_Pv) + v_I)*AngI_Pv); 
 
 f(31) = AngII_Pv_p - (((phi_RPF - phi_GFR - phi_L)/V_Pv)*AngII_circ ...
                    + (phi_Pv/V_Pv)*AngII_Isf_Pt...
-                   - (((phi_RPF-2*phi_L-phi_U)/V_Pv)+v_II)*AngII_Pv...
+                   - (((phi_RPF-phi_L-phi_U)/V_Pv)+v_II)*AngII_Pv... 
                    - k_ass*AT1R_memb_Pv*AngII_Pv + k_diss*AT1R_AngII_memb_Pv); 
                
 f(32) = AT1R_AngII_memb_Pv_p - (k_ass*AT1R_memb_Pv*AngII_Pv - k_diss*AT1R_AngII_memb_Pv);
@@ -457,8 +476,8 @@ if infusion.separate
     
     % Systemic
     f(41) = AngII_circ_exo_p - (K_AngII - (c_ACE2 + v_II)*AngII_circ_exo ...
-                             + (W_K/V_circ)*phi_L*(AngII_Isf_Pt_exo+AngII_Isf_Gl_exo)...
-                             + (W_K/V_circ)*(phi_RPF-2*phi_L-phi_U)*AngII_Pv_exo ...
+                             + (W_K/V_circ)*phi_L*(AngII_Isf_Pt_exo)...
+                             + (W_K/V_circ)*(phi_RPF-phi_L-phi_U)*AngII_Pv_exo ... 
                              - (W_K/V_circ)*phi_RPF*AngII_circ_exo...
                              + k_diss*AT1R_AngII_memb_circ_exo - k_ass*AT1R_memb_circ*AngII_circ_exo); 
                          
@@ -479,7 +498,7 @@ if infusion.separate
                                 - k_lys*AngII_cell_Gl_exo);
     
     % Peritubular 
-    f(47) = AngII_Isf_Pt_exo_p - ((phi_Pt/V_Pt_Isf)*AngII_Fl_Tb_exo ...
+    f(47) = AngII_Isf_Pt_exo_p - (k_trans*(V_Tb_Pt_cell/V_Pt_Isf)*AngII_cell_Tb_exo ...
                                - ((phi_Pv+phi_L)/V_Pt_Isf)*AngII_Isf_Pt_exo ...
                                + k_diss*AT1R_AngII_memb_Pt_exo - k_ass*AngII_Isf_Pt_exo*AT1R_memb_Pt);
                    
@@ -495,7 +514,8 @@ if infusion.separate
     % Tubular
     f(51) = AngII_Fl_Tb_exo_p - ((phi_GFR/V_Tb_Fl)*AngII_circ_exo ...
                               + k_diss*AT1R_AngII_memb_Tb_exo - k_ass*AngII_Fl_Tb_exo*AT1R_memb_Tb ...
-                              - ((phi_U + phi_Pt)/V_Tb_Fl)*AngII_Fl_Tb_exo);
+                              - k_meg*AngII_Fl_Tb_exo - (phi_U/V_Tb_Fl)*AngII_Fl_Tb_exo...
+                              + (phi_L/V_Tb_Fl)*AngII_Isf_Gl_exo);
 
     f(52) = AT1R_AngII_memb_Tb_exo_p - (k_ass*AngII_Fl_Tb_exo*AT1R_memb_Tb ...
                                      - (k_diss + k_int)*AT1R_AngII_memb_Tb_exo);
@@ -504,12 +524,12 @@ if infusion.separate
                              + k_ass*AngII_cell_Tb_exo*AT1R_cell_Tb - k_diss*AT1R_AngII_cell_Tb_exo) ;
 
     f(54) = AngII_cell_Tb_exo_p - (k_diss*AT1R_AngII_cell_Tb_exo - k_ass*AngII_cell_Tb_exo*AT1R_cell_Tb ...
-                                - k_lys*AngII_cell_Tb_exo);
+                                 + k_meg*(V_Tb_Fl/V_Tb_Pt_cell)*AngII_Fl_Tb_exo - k_trans*AngII_cell_Tb_exo);
 
     % Renal (blood) vasculature
     f(55) = AngII_Pv_exo_p - (((phi_RPF - phi_GFR - phi_L)/V_Pv)*AngII_circ_exo ...
                            + (phi_Pv/V_Pv)*AngII_Isf_Pt_exo...
-                           - (((phi_RPF-2*phi_L-phi_U)/V_Pv)+v_II)*AngII_Pv_exo...
+                           - (((phi_RPF-phi_L-phi_U)/V_Pv)+v_II)*AngII_Pv_exo... 
                            - k_ass*AT1R_memb_Pv*AngII_Pv_exo + k_diss*AT1R_AngII_memb_Pv_exo); 
                
     f(56) = AT1R_AngII_memb_Pv_exo_p - (k_ass*AT1R_memb_Pv*AngII_Pv_exo - k_diss*AT1R_AngII_memb_Pv_exo);
