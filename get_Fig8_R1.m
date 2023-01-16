@@ -1,5 +1,5 @@
-% Plots losartan distribution figure
-function get_Fig6(dose,unit,type,days)
+%% Ang II distribution across compartments
+function get_Fig8_R1(dose,unit,type,days)
 
 separate = false;
 x0 = [load('model_SS.mat').SSdata];
@@ -18,7 +18,7 @@ area((t_tot),comp_tot(:,1)+comp_tot(:,2)+comp_tot(:,3),'facecolor',c(3,:));
 area((t_tot),comp_tot(:,1)+comp_tot(:,2),'facecolor',c(5,:));
 area((t_tot),comp_tot(:,1),'facecolor',c(7,:));
 hold off
-ttl = title('A','fontsize',20);
+ttl = title('a','fontsize',20);
 ttl.Units = 'Normalize'; 
 ttl.Position(1) = 0; 
 ttl.HorizontalAlignment = 'left';  
@@ -35,7 +35,7 @@ area((t_tot),comp_isf_tot(:,1)+comp_isf_tot(:,2)+comp_isf_tot(:,3),'facecolor',c
 area((t_tot),comp_isf_tot(:,1)+comp_isf_tot(:,2),'facecolor',c(5,:));
 area((t_tot),comp_isf_tot(:,1),'facecolor',c(7,:));
 hold off
-ttl = title('B','fontsize',20);
+ttl = title('b','fontsize',20);
 ttl.Units = 'Normalize'; 
 ttl.Position(1) = 0;
 ttl.HorizontalAlignment = 'left';  
@@ -52,7 +52,7 @@ area((t_tot),comp_memb_tot(:,1)+comp_memb_tot(:,2)+comp_memb_tot(:,3),'facecolor
 area((t_tot),comp_memb_tot(:,1)+comp_memb_tot(:,2),'facecolor',c(5,:));
 area((t_tot),comp_memb_tot(:,1),'facecolor',c(7,:));
 hold off
-ttl = title('C','fontsize',20);
+ttl = title('c','fontsize',20);
 ttl.Units = 'Normalize'; 
 ttl.Position(1) = 0; 
 ttl.HorizontalAlignment = 'left';  
@@ -67,11 +67,11 @@ hold on
 area((t_tot),comp_intra_tot(:,1)+comp_intra_tot(:,2)+comp_intra_tot(:,3),'facecolor',c(3,:));
 area((t_tot),comp_intra_tot(:,1)+comp_intra_tot(:,2),'facecolor',c(5,:));
 area((t_tot),comp_intra_tot(:,1),'facecolor',c(7,:));
-legend({'Renal vasculature compartment','Tubular compartment',...
+legend({'Vasculature compartment','Tubular compartment',...
         'Peritubular compartment','Glomerular compartment'},...
         'location','eastoutside');
 hold off
-ttl = title('D','fontsize',20);
+ttl = title('d','fontsize',20);
 ttl.Units = 'Normalize'; 
 ttl.Position(1) = 0; 
 ttl.HorizontalAlignment = 'left';  
