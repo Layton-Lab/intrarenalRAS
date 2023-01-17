@@ -79,6 +79,10 @@ AngII_cell_Tb_eq        = SS(5);
 
 %% Optional inputs
 setNuTo1 = false;
+simulate.drug = 'none';
+t_end = 0; % Needed for Losartan simulations
+t_res = 1440;
+los_pars = [];
 for i = 1:length(varargin)
     if strcmp(varargin{i},'all') % remove all fb
         K_circ_ACE    = 0;
@@ -111,6 +115,19 @@ for i = 1:length(varargin)
         K_Pt = 0;
         K_Tb = 0;
         K_endo = 7400;
+    elseif strcmp(varargin{i},'losartan')
+        simulate.drug = 'losartan';
+        simulate.dose = varargin{i+1};
+        simulate.type = varargin{i+2};
+        no_reabs = varargin{i+3}; % needed for oral; single numerics
+        deltat = varargin{i+4};
+        i = i+5;
+    elseif strcmp(varargin{i},'t0')
+        t_end = varargin{i+1};
+        i = i+1;
+    elseif strcmp(varargin{i}, 'los_pars')
+        los_pars = varargin{i+1};
+        i = i +1;
     end
 end
 %% Variables
@@ -168,77 +185,146 @@ fb_circ_AGT          = x(37); fb_circ_AGT_p         = x_p(37);
 fb_circ_ACE          = x(38); fb_circ_ACE_p         = x_p(38);
 fb_Pt                = x(39); fb_Pt_p               = x_p(39);
 fb_Tb                = x(40); fb_Tb_p               = x_p(40);
+fb_endo              = x(41); fb_endo_p             = x_p(41); % update SS
+
+if ~infusion.separate && strcmp(simulate.drug,'losartan')
+
+    %%% --- Parameters
+    if isempty(los_pars)
+        los_pars = load('losartan_pars4.mat').pars;
+    end
+    
+    k_a_los = los_pars(1)*10^(-3);
+    k_cyt = los_pars(2)*10^(-1);
+    k_12 = los_pars(3)*10^(-1);
+    k_21 = los_pars(4)*10^(-2);
+    k_elim = los_pars(5)*10^-3;
+    k_elim_exp = los_pars(6)*10^-2;
+
+    k_ass_los = 2.4*10^(-5); k_diss_los = k_ass_los*10.6*1000;
+    k_ass_exp = 2.4*10^(-5); k_diss_exp = k_ass_exp*4.7*1000;
+    %k_elim = 8.5*10^-3;
+    %k_elim_exp = 31.5*10^-2;
+    k_diff_los = los_pars(7)*10^-1; %k_diff;%*0.5; 
+
+    %%% --- Variables
+    
+    % Systemic (central compartment)
+    los_circ = x(42); los_circ_p = x_p(42); 
+    AT1R_los_memb_circ = x(43); AT1R_los_memb_circ_p = x(43);
+    exp3174_circ = x(44); exp3174_circ_p = x_p(44);
+    AT1R_exp3174_memb_circ = x(45); AT1R_exp3174_memb_circ_p = x_p(45);
+    
+    % GI
+    los_GI = x(46); los_GI_p = x_p(46);
+    exp3174_GI = x(47); exp_3174_GI_p = x_p(47);
+   
+    % Peripheral compartment
+    los_peri = x(48); los_peri_p = x_p(48); 
+    exp3174_peri = x(49); exp3174_peri_p = x_p(49);
+    
+    %%% --- Kidney
+    
+    % Glomerular
+    los_Isf_Gl = x(50); los_Isf_Gl_p = x_p(50);
+    AT1R_los_memb_Gl = x(51); AT1R_los_memb_Gl_p = x_p(51);
+    exp3174_Isf_Gl = x(52); exp3174_Isf_Gl_p = x_p(52);
+    AT1R_exp3174_memb_Gl = x(53); AT1R_exp3174_memb_Gl_p = x_p(53);
+    
+    % Peritubular
+    los_Isf_Pt = x(54); los_Isf_Pt_p = x_p(54);
+    AT1R_los_memb_Pt = x(55); AT1R_los_memb_Pt_p = x_p(55);
+    exp3174_Isf_Pt = x(56); exp3174_Isf_Pt_p = x_p(56);
+    AT1R_exp3174_memb_Pt = x(57); AT1R_exp3174_memb_Pt_p = x_p(57);
+
+    % Tubular
+    los_Fl_Tb = x(58); los_Fl_Tb_p = x_p(58);
+    AT1R_los_memb_Tb = x(59); AT1R_los_memb_Tb_p = x_p(59);
+    exp3174_Fl_Tb = x(60); exp3174_Fl_Tb_p = x_p(60);
+    AT1R_exp3174_memb_Tb = x(61); AT1R_exp3174_memb_Tb_p = x_p(61);
+    
+    % Renal (blood) vasculature
+    los_Pv = x(62); los_Pv_p = x_p(62);
+    AT1R_los_memb_Pv = x(63); AT1R_los_memb_Pv_p = x_p(63);
+    exp3174_Pv = x(64); exp3174_Pv_p = x_p(64);
+    AT1R_exp3174_memb_Pv = x(65); AT1R_exp3174_memb_Pv_p = x_p(65);
+    
+    % Whole kidney
+    los_T = x(66); los_T_p = x_p(66);
+    exp3174_T = x(67); exp3174_T_p = x_p(67);
+    
+end
 
 if infusion.separate
     
     %%% --- Exogenous 
     
     % Systemic
-    AngII_circ_exo           = x(41); AngII_circ_exo_p           = x_p(41);
-    AT1R_AngII_memb_circ_exo = x(42); AT1R_AngII_memb_circ_exo_p = x_p(42);
+    AngII_circ_exo           = x(42); AngII_circ_exo_p           = x_p(42);
+    AT1R_AngII_memb_circ_exo = x(43); AT1R_AngII_memb_circ_exo_p = x_p(43);
     
     % Glomerular
-    AngII_Isf_Gl_exo         = x(43); AngII_Isf_Gl_exo_p         = x_p(43);
-    AT1R_AngII_memb_Gl_exo   = x(44); AT1R_AngII_memb_Gl_exo_p   = x_p(44);
-    AT1R_AngII_cell_Gl_exo   = x(45); AT1R_AngII_cell_Gl_exo_p   = x_p(45);
-    AngII_cell_Gl_exo        = x(46); AngII_cell_Gl_exo_p        = x_p(46);
+    AngII_Isf_Gl_exo         = x(44); AngII_Isf_Gl_exo_p         = x_p(44);
+    AT1R_AngII_memb_Gl_exo   = x(45); AT1R_AngII_memb_Gl_exo_p   = x_p(45);
+    AT1R_AngII_cell_Gl_exo   = x(46); AT1R_AngII_cell_Gl_exo_p   = x_p(46);
+    AngII_cell_Gl_exo        = x(47); AngII_cell_Gl_exo_p        = x_p(47);
     
     % Peritubular
-    AngII_Isf_Pt_exo         = x(47); AngII_Isf_Pt_exo_p         = x_p(47);
-    AT1R_AngII_memb_Pt_exo   = x(48); AT1R_AngII_memb_Pt_exo_p   = x_p(48);
-    AT1R_AngII_cell_Pt_exo   = x(49); AT1R_AngII_cell_Pt_exo_p   = x_p(49);
-    AngII_cell_Pt_exo        = x(50); AngII_cell_Pt_exo_p        = x_p(50);
+    AngII_Isf_Pt_exo         = x(48); AngII_Isf_Pt_exo_p         = x_p(48);
+    AT1R_AngII_memb_Pt_exo   = x(49); AT1R_AngII_memb_Pt_exo_p   = x_p(49);
+    AT1R_AngII_cell_Pt_exo   = x(50); AT1R_AngII_cell_Pt_exo_p   = x_p(50);
+    AngII_cell_Pt_exo        = x(51); AngII_cell_Pt_exo_p        = x_p(51);
     
     % Tubular
-    AngII_Fl_Tb_exo          = x(51); AngII_Fl_Tb_exo_p         = x_p(51);
-    AT1R_AngII_memb_Tb_exo   = x(52); AT1R_AngII_memb_Tb_exo_p  = x_p(52);
-    AT1R_AngII_cell_Tb_exo   = x(53); AT1R_AngII_cell_Tb_exo_p  = x_p(53);
-    AngII_cell_Tb_exo        = x(54); AngII_cell_Tb_exo_p       = x_p(54);
+    AngII_Fl_Tb_exo          = x(52); AngII_Fl_Tb_exo_p         = x_p(52);
+    AT1R_AngII_memb_Tb_exo   = x(53); AT1R_AngII_memb_Tb_exo_p  = x_p(53);
+    AT1R_AngII_cell_Tb_exo   = x(54); AT1R_AngII_cell_Tb_exo_p  = x_p(54);
+    AngII_cell_Tb_exo        = x(55); AngII_cell_Tb_exo_p       = x_p(55);
     
     % Renal (blood) vasculatur
-    AngII_Pv_exo             = x(55); AngII_Pv_exo_p            = x_p(55);
-    AT1R_AngII_memb_Pv_exo   = x(56); AT1R_AngII_memb_Pv_exo_p  = x_p(56);
+    AngII_Pv_exo             = x(56); AngII_Pv_exo_p            = x_p(56);
+    AT1R_AngII_memb_Pv_exo   = x(57); AT1R_AngII_memb_Pv_exo_p  = x_p(57);
 
     % Whole Kidney
-    AngII_T_exo              = x(57); AngII_T_exo_p             = x_p(57);
+    AngII_T_exo              = x(58); AngII_T_exo_p             = x_p(58);
     
     %%%--- Total
     
     % Systemic
-    AngII_circ_tot           = x(58); AngII_circ_tot_p           = x_p(58);
-    AT1R_AngII_memb_circ_tot = x(59); AT1R_AngII_memb_circ_tot_p = x_p(59);
+    AngII_circ_tot           = x(59); AngII_circ_tot_p           = x_p(59);
+    AT1R_AngII_memb_circ_tot = x(60); AT1R_AngII_memb_circ_tot_p = x_p(60);
     
     % Glomerular
-    AngII_Isf_Gl_tot         = x(60); AngII_Isf_Gl_tot_p         = x_p(60);
-    AT1R_AngII_memb_Gl_tot   = x(61); AT1R_AngII_memb_Gl_tot_p   = x_p(61);
-    AT1R_AngII_cell_Gl_tot   = x(62); AT1R_AngII_cell_Gl_tot_p   = x_p(62);
-    AngII_cell_Gl_tot        = x(63); AngII_cell_Gl_tot_p        = x_p(63);
+    AngII_Isf_Gl_tot         = x(61); AngII_Isf_Gl_tot_p         = x_p(61);
+    AT1R_AngII_memb_Gl_tot   = x(62); AT1R_AngII_memb_Gl_tot_p   = x_p(62);
+    AT1R_AngII_cell_Gl_tot   = x(63); AT1R_AngII_cell_Gl_tot_p   = x_p(63);
+    AngII_cell_Gl_tot        = x(64); AngII_cell_Gl_tot_p        = x_p(64);
     
     % Peritubular
-    AngII_Isf_Pt_tot         = x(64); AngII_Isf_Pt_tot_p         = x_p(64);
-    AT1R_AngII_memb_Pt_tot   = x(65); AT1R_AngII_memb_Pt_tot_p   = x_p(65);
-    AT1R_AngII_cell_Pt_tot   = x(66); AT1R_AngII_cell_Pt_tot_p   = x_p(66);
-    AngII_cell_Pt_tot        = x(67); AngII_cell_Pt_tot_p        = x_p(67);
+    AngII_Isf_Pt_tot         = x(65); AngII_Isf_Pt_tot_p         = x_p(65);
+    AT1R_AngII_memb_Pt_tot   = x(66); AT1R_AngII_memb_Pt_tot_p   = x_p(66);
+    AT1R_AngII_cell_Pt_tot   = x(67); AT1R_AngII_cell_Pt_tot_p   = x_p(67);
+    AngII_cell_Pt_tot        = x(68); AngII_cell_Pt_tot_p        = x_p(68);
     
     % Tubular
-    AngII_Fl_Tb_tot          = x(68); AngII_Fl_Tb_tot_p         = x_p(68);
-    AT1R_AngII_memb_Tb_tot   = x(69); AT1R_AngII_memb_Tb_tot_p  = x_p(69);
-    AT1R_AngII_cell_Tb_tot   = x(70); AT1R_AngII_cell_Tb_tot_p  = x_p(70);
-    AngII_cell_Tb_tot        = x(71); AngII_cell_Tb_tot_p       = x_p(71);
+    AngII_Fl_Tb_tot          = x(69); AngII_Fl_Tb_tot_p         = x_p(69);
+    AT1R_AngII_memb_Tb_tot   = x(70); AT1R_AngII_memb_Tb_tot_p  = x_p(70);
+    AT1R_AngII_cell_Tb_tot   = x(71); AT1R_AngII_cell_Tb_tot_p  = x_p(71);
+    AngII_cell_Tb_tot        = x(72); AngII_cell_Tb_tot_p       = x_p(72);
     
     % Renal (blood) vasculature
-    AngII_Pv_tot             = x(72); AngII_Pv_tot_p            = x_p(72);
-    AT1R_AngII_memb_Pv_tot   = x(73); AT1R_AngII_memb_Pv_tot_p  = x_p(73);
+    AngII_Pv_tot             = x(73); AngII_Pv_tot_p            = x_p(73);
+    AT1R_AngII_memb_Pv_tot   = x(74); AT1R_AngII_memb_Pv_tot_p  = x_p(74);
 
     % Whole Kidney
-    AngII_T_tot              = x(74); AngII_T_tot_p             = x_p(74);
+    AngII_T_tot              = x(75); AngII_T_tot_p             = x_p(75);
 end
 %% Infusion
 
 D = infusion.dose;
 K_AngII = 0;
 if strcmp(infusion.type,'SC')
-    K_AngII = (D/V_circ)*(1-exp(-k_a*t));
+    K_AngII = (D/V_circ)*(1-exp(-k_a*(t + t_end)));
 elseif  strcmp(infusion.type,'IV')
     K_AngII = D/V_circ;
 end
@@ -291,6 +377,9 @@ f(4) = AT1R_AngII_memb_circ_p - (k_ass*AT1R_memb_circ*AngII_circ ...
                           
 if infusion.separate
     f(5) = AT1R_memb_circ - (AT1R_circ_tot - AT1R_AngII_memb_circ_tot);
+elseif strcmp(simulate.drug,'losartan')
+    f(5) = AT1R_memb_circ - (AT1R_circ_tot - AT1R_AngII_memb_circ ...
+                          - 1000*(AT1R_los_memb_circ + AT1R_exp3174_memb_circ));
 else
     f(5) = AT1R_memb_circ - (AT1R_circ_tot - AT1R_AngII_memb_circ);
 end
@@ -320,6 +409,10 @@ f(13) = AngII_cell_Gl_p - (k_diss*AT1R_AngII_cell_Gl - k_ass*AngII_cell_Gl*AT1R_
 if infusion.separate                   
     f(14) = AT1R_memb_Gl - (AT1R_Gl_tot/V_Gl_Isf - AT1R_AngII_memb_Gl_tot ...
                          - (V_Gl_cell/V_Gl_Isf)*(AT1R_AngII_cell_Gl_tot + AT1R_cell_Gl));
+elseif strcmp(simulate.drug,'losartan')
+    f(14) = AT1R_memb_Gl - (AT1R_Gl_tot/V_Gl_Isf - AT1R_AngII_memb_Gl ...
+                         - (V_Gl_cell/V_Gl_Isf)*(AT1R_AngII_cell_Gl + AT1R_cell_Gl)...
+                         - 1000*(AT1R_los_memb_Gl + AT1R_exp3174_memb_Gl));   
 else
     f(14) = AT1R_memb_Gl - (AT1R_Gl_tot/V_Gl_Isf - AT1R_AngII_memb_Gl ...
                          - (V_Gl_cell/V_Gl_Isf)*(AT1R_AngII_cell_Gl + AT1R_cell_Gl));    
@@ -354,7 +447,12 @@ f(20) = AngII_cell_Pt_p - (k_diss*AT1R_AngII_cell_Pt - k_ass*AngII_cell_Pt*AT1R_
 if infusion.separate                   
     f(21) = AT1R_memb_Pt_p - (fb_Pt + (V_Tb_Pt_cell/V_Pt_Isf)*k_rec*AT1R_cell_Pt ...
                            + k_diss*AT1R_AngII_memb_Pt_tot ...
-                           - k_ass*AngII_Isf_Pt_tot*AT1R_memb_Pt);           
+                           - k_ass*AngII_Isf_Pt_tot*AT1R_memb_Pt); 
+elseif strcmp(simulate.drug,'losartan')
+    f(21) = AT1R_memb_Pt_p - (fb_Pt + (V_Tb_Pt_cell/V_Pt_Isf)*k_rec*AT1R_cell_Pt ...
+                           + k_diss*AT1R_AngII_memb_Pt - k_ass*AngII_Isf_Pt*AT1R_memb_Pt...
+                           + 1000*(k_diss_los*AT1R_los_memb_Pt - k_ass_los*los_Isf_Pt*AT1R_memb_Pt)...
+                           + 1000*(k_diss_exp*AT1R_exp3174_memb_Pt - k_ass_exp*exp3174_Isf_Pt*AT1R_memb_Pt));   
 else
     f(21) = AT1R_memb_Pt_p - (fb_Pt + (V_Tb_Pt_cell/V_Pt_Isf)*k_rec*AT1R_cell_Pt ...
                            + k_diss*AT1R_AngII_memb_Pt ...
@@ -370,11 +468,6 @@ else
 end
 
 %%% ----  Tubular
-if  q_endo <= 1 
-    fb_endo = 0;
-elseif q_endo > 1
-    fb_endo = (K_endo*(q_endo-1));
-end
 
 f(23) = AngI_Fl_Tb_p  - (k_AngI_Tb + fb_endo + (phi_GFR/V_Tb_Fl)*AngI_circ ...
                       - (c_ACE_Tb + (phi_U + k_diff)/V_Tb_Fl)*AngI_Fl_Tb ...
@@ -398,6 +491,11 @@ if infusion.separate
     f(28) = AT1R_memb_Tb_p - (fb_Tb + (V_Tb_Pt_cell/V_Tb_Fl)*k_rec*AT1R_cell_Tb ...
                            + k_diss*AT1R_AngII_memb_Tb_tot ...
                            - k_ass*AngII_Fl_Tb_tot*AT1R_memb_Tb); 
+elseif strcmp(simulate.drug,'losartan')
+    f(28) = AT1R_memb_Tb_p - (fb_Tb + (V_Tb_Pt_cell/V_Tb_Fl)*k_rec*AT1R_cell_Tb ...
+                           + k_diss*AT1R_AngII_memb_Tb - k_ass*AngII_Fl_Tb*AT1R_memb_Tb...
+                           + 1000*(k_diss_los*AT1R_los_memb_Tb - k_ass_los*los_Fl_Tb*AT1R_memb_Tb)...
+                           + 1000*(k_diss_exp*AT1R_exp3174_memb_Tb - k_ass_exp*exp3174_Fl_Tb*AT1R_memb_Tb)); 
 else
     f(28) = AT1R_memb_Tb_p - (fb_Tb + (V_Tb_Pt_cell/V_Tb_Fl)*k_rec*AT1R_cell_Tb ...
                            + k_diss*AT1R_AngII_memb_Tb ...
@@ -427,6 +525,10 @@ f(32) = AT1R_AngII_memb_Pv_p - (k_ass*AT1R_memb_Pv*AngII_Pv - k_diss*AT1R_AngII_
 
 if infusion.separate 
     f(33) = AT1R_memb_Pv - (AT1R_Pv_tot - AT1R_AngII_memb_Pv_tot);
+
+elseif strcmp(simulate.drug,'losartan')
+    f(33) = AT1R_memb_Pv - (AT1R_Pv_tot - AT1R_AngII_memb_Pv...
+                         - 1000*(AT1R_los_memb_Pv + AT1R_exp3174_memb_Pv));
 else
     f(33) = AT1R_memb_Pv - (AT1R_Pv_tot - AT1R_AngII_memb_Pv);
 end
@@ -446,6 +548,9 @@ f(35) = AngII_T - (V_Gl_Isf*AngII_Isf_Gl + V_Pt_Isf*AngII_Isf_Pt + V_Tb_Fl*AngII
 if setNuTo1 
     f(36) = nu_AT1R - 1;
 else
+    if q_Gl < 1
+        B_AT1R = 0.545;
+    end
     f(36) = nu_AT1R - q_Gl^(-B_AT1R);
 end
 
@@ -469,73 +574,79 @@ elseif q_Pt > 1
     f(40) = fb_Tb - (K_Tb*(q_Tb-1));
 end
 
+if  q_endo <= 1 
+    f(41) = fb_endo - 0;
+elseif q_endo > 1
+    f(41) = fb_endo - (K_endo*(q_endo-1));
+end
+
 
 if infusion.separate
     
     %%% --- Exogenous
     
     % Systemic
-    f(41) = AngII_circ_exo_p - (K_AngII - (c_ACE2 + v_II)*AngII_circ_exo ...
+    f(42) = AngII_circ_exo_p - (K_AngII - (c_ACE2 + v_II)*AngII_circ_exo ...
                              + (W_K/V_circ)*phi_L*(AngII_Isf_Pt_exo)...
                              + (W_K/V_circ)*(phi_RPF-phi_L-phi_U)*AngII_Pv_exo ... 
                              - (W_K/V_circ)*phi_RPF*AngII_circ_exo...
                              + k_diss*AT1R_AngII_memb_circ_exo - k_ass*AT1R_memb_circ*AngII_circ_exo); 
                          
-    f(42) = AT1R_AngII_memb_circ_exo_p - (k_ass*AT1R_memb_circ*AngII_circ_exo ...
+    f(43) = AT1R_AngII_memb_circ_exo_p - (k_ass*AT1R_memb_circ*AngII_circ_exo ...
                                        - k_diss*AT1R_AngII_memb_circ_exo);
     
     % Glomerular
-    f(43) = AngII_Isf_Gl_exo_p - ((phi_L/V_Gl_Isf)*(AngII_circ_exo - AngII_Isf_Gl_exo) ...
+    f(44) = AngII_Isf_Gl_exo_p - ((phi_L/V_Gl_Isf)*(AngII_circ_exo - AngII_Isf_Gl_exo) ...
                        + k_diss*AT1R_AngII_memb_Gl_exo -k_ass*AngII_Isf_Gl_exo*AT1R_memb_Gl);   
                    
-    f(44) = AT1R_AngII_memb_Gl_exo_p - (k_ass*AngII_Isf_Gl_exo*AT1R_memb_Gl ...
+    f(45) = AT1R_AngII_memb_Gl_exo_p - (k_ass*AngII_Isf_Gl_exo*AT1R_memb_Gl ...
                                      - (k_diss + k_int)*AT1R_AngII_memb_Gl_exo);
 
-    f(45) = AT1R_AngII_cell_Gl_exo_p - ((V_Gl_Isf/V_Gl_cell)*k_int*AT1R_AngII_memb_Gl_exo ...
+    f(46) = AT1R_AngII_cell_Gl_exo_p - ((V_Gl_Isf/V_Gl_cell)*k_int*AT1R_AngII_memb_Gl_exo ...
                                      + k_ass*AngII_cell_Gl_exo*AT1R_cell_Gl - k_diss*AT1R_AngII_cell_Gl_exo) ;
 
-    f(46) = AngII_cell_Gl_exo_p - (k_diss*AT1R_AngII_cell_Gl_exo - k_ass*AngII_cell_Gl_exo*AT1R_cell_Gl ...
+    f(47) = AngII_cell_Gl_exo_p - (k_diss*AT1R_AngII_cell_Gl_exo - k_ass*AngII_cell_Gl_exo*AT1R_cell_Gl ...
                                 - k_lys*AngII_cell_Gl_exo);
     
     % Peritubular 
-    f(47) = AngII_Isf_Pt_exo_p - (k_trans*(V_Tb_Pt_cell/V_Pt_Isf)*AngII_cell_Tb_exo ...
+    f(48) = AngII_Isf_Pt_exo_p - (k_trans*(V_Tb_Pt_cell/V_Pt_Isf)*AngII_cell_Tb_exo ...
                                - ((phi_Pv+phi_L)/V_Pt_Isf)*AngII_Isf_Pt_exo ...
                                + k_diss*AT1R_AngII_memb_Pt_exo - k_ass*AngII_Isf_Pt_exo*AT1R_memb_Pt);
                    
-    f(48) = AT1R_AngII_memb_Pt_exo_p - (k_ass*AngII_Isf_Pt_exo*AT1R_memb_Pt ...
+    f(49) = AT1R_AngII_memb_Pt_exo_p - (k_ass*AngII_Isf_Pt_exo*AT1R_memb_Pt ...
                                      - (k_diss + k_int)*AT1R_AngII_memb_Pt_exo);
 
-    f(49) = AT1R_AngII_cell_Pt_exo_p - ((V_Pt_Isf/V_Tb_Pt_cell)*k_int*AT1R_AngII_memb_Pt_exo ...
+    f(50) = AT1R_AngII_cell_Pt_exo_p - ((V_Pt_Isf/V_Tb_Pt_cell)*k_int*AT1R_AngII_memb_Pt_exo ...
                                      + k_ass*AngII_cell_Pt_exo*AT1R_cell_Pt - k_diss*AT1R_AngII_cell_Pt_exo) ;
 
-    f(50) = AngII_cell_Pt_exo_p - (k_diss*AT1R_AngII_cell_Pt_exo - k_ass*AngII_cell_Pt_exo*AT1R_cell_Pt ...
+    f(51) = AngII_cell_Pt_exo_p - (k_diss*AT1R_AngII_cell_Pt_exo - k_ass*AngII_cell_Pt_exo*AT1R_cell_Pt ...
                                 - k_lys*AngII_cell_Pt_exo);
     
     % Tubular
-    f(51) = AngII_Fl_Tb_exo_p - ((phi_GFR/V_Tb_Fl)*AngII_circ_exo ...
+    f(52) = AngII_Fl_Tb_exo_p - ((phi_GFR/V_Tb_Fl)*AngII_circ_exo ...
                               + k_diss*AT1R_AngII_memb_Tb_exo - k_ass*AngII_Fl_Tb_exo*AT1R_memb_Tb ...
                               - k_meg*AngII_Fl_Tb_exo - (phi_U/V_Tb_Fl)*AngII_Fl_Tb_exo...
                               + (phi_L/V_Tb_Fl)*AngII_Isf_Gl_exo);
 
-    f(52) = AT1R_AngII_memb_Tb_exo_p - (k_ass*AngII_Fl_Tb_exo*AT1R_memb_Tb ...
+    f(53) = AT1R_AngII_memb_Tb_exo_p - (k_ass*AngII_Fl_Tb_exo*AT1R_memb_Tb ...
                                      - (k_diss + k_int)*AT1R_AngII_memb_Tb_exo);
 
-    f(53) = AT1R_AngII_cell_Tb_exo_p - ((V_Tb_Fl/V_Tb_Pt_cell)*k_int*AT1R_AngII_memb_Tb_exo ...
+    f(54) = AT1R_AngII_cell_Tb_exo_p - ((V_Tb_Fl/V_Tb_Pt_cell)*k_int*AT1R_AngII_memb_Tb_exo ...
                              + k_ass*AngII_cell_Tb_exo*AT1R_cell_Tb - k_diss*AT1R_AngII_cell_Tb_exo) ;
 
-    f(54) = AngII_cell_Tb_exo_p - (k_diss*AT1R_AngII_cell_Tb_exo - k_ass*AngII_cell_Tb_exo*AT1R_cell_Tb ...
+    f(55) = AngII_cell_Tb_exo_p - (k_diss*AT1R_AngII_cell_Tb_exo - k_ass*AngII_cell_Tb_exo*AT1R_cell_Tb ...
                                  + k_meg*(V_Tb_Fl/V_Tb_Pt_cell)*AngII_Fl_Tb_exo - k_trans*AngII_cell_Tb_exo);
 
     % Renal (blood) vasculature
-    f(55) = AngII_Pv_exo_p - (((phi_RPF - phi_GFR - phi_L)/V_Pv)*AngII_circ_exo ...
+    f(56) = AngII_Pv_exo_p - (((phi_RPF - phi_GFR - phi_L)/V_Pv)*AngII_circ_exo ...
                            + (phi_Pv/V_Pv)*AngII_Isf_Pt_exo...
                            - (((phi_RPF-phi_L-phi_U)/V_Pv)+v_II)*AngII_Pv_exo... 
                            - k_ass*AT1R_memb_Pv*AngII_Pv_exo + k_diss*AT1R_AngII_memb_Pv_exo); 
                
-    f(56) = AT1R_AngII_memb_Pv_exo_p - (k_ass*AT1R_memb_Pv*AngII_Pv_exo - k_diss*AT1R_AngII_memb_Pv_exo);
+    f(57) = AT1R_AngII_memb_Pv_exo_p - (k_ass*AT1R_memb_Pv*AngII_Pv_exo - k_diss*AT1R_AngII_memb_Pv_exo);
     
     % Total
-    f(57) = AngII_T_exo - (V_Gl_Isf*AngII_Isf_Gl_exo + V_Pt_Isf*AngII_Isf_Pt_exo + V_Tb_Fl*AngII_Fl_Tb_exo...
+    f(58) = AngII_T_exo - (V_Gl_Isf*AngII_Isf_Gl_exo + V_Pt_Isf*AngII_Isf_Pt_exo + V_Tb_Fl*AngII_Fl_Tb_exo...
                 + V_Gl_Isf*AT1R_AngII_memb_Gl_exo + V_Pt_Isf*AT1R_AngII_memb_Pt_exo + V_Tb_Fl*AT1R_AngII_memb_Tb_exo...
                 + V_Tb_Pt_cell*(AT1R_AngII_cell_Tb_exo + AT1R_AngII_cell_Pt_exo + AngII_cell_Tb_exo + AngII_cell_Pt_exo)...
                 + V_Gl_cell*(AT1R_AngII_cell_Gl_exo + AngII_cell_Gl_exo) + V_Pv*(AngII_Pv_exo+AT1R_AngII_memb_Pv_exo));
@@ -543,33 +654,149 @@ if infusion.separate
     %%% --- Total
     
     % Systemic
-    f(58) = AngII_circ_tot - (AngII_circ + AngII_circ_exo);
-    f(59) = AT1R_AngII_memb_circ_tot - (AT1R_AngII_memb_circ + AT1R_AngII_memb_circ_exo);
+    f(59) = AngII_circ_tot - (AngII_circ + AngII_circ_exo);
+    f(60) = AT1R_AngII_memb_circ_tot - (AT1R_AngII_memb_circ + AT1R_AngII_memb_circ_exo);
     
     % Glomerular
-    f(60) = AngII_Isf_Gl_tot - (AngII_Isf_Gl + AngII_Isf_Gl_exo);
-    f(61) = AT1R_AngII_memb_Gl_tot - (AT1R_AngII_memb_Gl + AT1R_AngII_memb_Gl_exo);
-    f(62) = AT1R_AngII_cell_Gl_tot - (AT1R_AngII_cell_Gl + AT1R_AngII_cell_Gl_exo);
-    f(63) = AngII_cell_Gl_tot - (AngII_cell_Gl + AngII_cell_Gl_exo);
+    f(61) = AngII_Isf_Gl_tot - (AngII_Isf_Gl + AngII_Isf_Gl_exo);
+    f(62) = AT1R_AngII_memb_Gl_tot - (AT1R_AngII_memb_Gl + AT1R_AngII_memb_Gl_exo);
+    f(63) = AT1R_AngII_cell_Gl_tot - (AT1R_AngII_cell_Gl + AT1R_AngII_cell_Gl_exo);
+    f(64) = AngII_cell_Gl_tot - (AngII_cell_Gl + AngII_cell_Gl_exo);
     
     % Peritubular
-    f(64) = AngII_Isf_Pt_tot - (AngII_Isf_Pt + AngII_Isf_Pt_exo);
-    f(65) = AT1R_AngII_memb_Pt_tot - (AT1R_AngII_memb_Pt + AT1R_AngII_memb_Pt_exo);
-    f(66) = AT1R_AngII_cell_Pt_tot - (AT1R_AngII_cell_Pt + AT1R_AngII_cell_Pt_exo);
-    f(67) = AngII_cell_Pt_tot - (AngII_cell_Pt + AngII_cell_Pt_exo);
+    f(65) = AngII_Isf_Pt_tot - (AngII_Isf_Pt + AngII_Isf_Pt_exo);
+    f(66) = AT1R_AngII_memb_Pt_tot - (AT1R_AngII_memb_Pt + AT1R_AngII_memb_Pt_exo);
+    f(67) = AT1R_AngII_cell_Pt_tot - (AT1R_AngII_cell_Pt + AT1R_AngII_cell_Pt_exo);
+    f(68) = AngII_cell_Pt_tot - (AngII_cell_Pt + AngII_cell_Pt_exo);
     
     % Tubular
-    f(68) = AngII_Fl_Tb_tot - (AngII_Fl_Tb + AngII_Fl_Tb_exo);
-    f(69) = AT1R_AngII_memb_Tb_tot - (AT1R_AngII_memb_Tb + AT1R_AngII_memb_Tb_exo);
-    f(70) = AT1R_AngII_cell_Tb_tot - (AT1R_AngII_cell_Tb + AT1R_AngII_cell_Tb_exo);
-    f(71) = AngII_cell_Tb_tot - (AngII_cell_Tb + AngII_cell_Tb_exo);
+    f(69) = AngII_Fl_Tb_tot - (AngII_Fl_Tb + AngII_Fl_Tb_exo);
+    f(70) = AT1R_AngII_memb_Tb_tot - (AT1R_AngII_memb_Tb + AT1R_AngII_memb_Tb_exo);
+    f(71) = AT1R_AngII_cell_Tb_tot - (AT1R_AngII_cell_Tb + AT1R_AngII_cell_Tb_exo);
+    f(72) = AngII_cell_Tb_tot - (AngII_cell_Tb + AngII_cell_Tb_exo);
     
     % Renal (blood) vasculature
-    f(72) = AngII_Pv_tot - (AngII_Pv + AngII_Pv_exo);
-    f(73) = AT1R_AngII_memb_Pv_tot - (AT1R_AngII_memb_Pv + AT1R_AngII_memb_Pv_exo);
+    f(73) = AngII_Pv_tot - (AngII_Pv + AngII_Pv_exo);
+    f(74) = AT1R_AngII_memb_Pv_tot - (AT1R_AngII_memb_Pv + AT1R_AngII_memb_Pv_exo);
 
     % Whole Kidney
-    f(74) = AngII_T_tot - (AngII_T + AngII_T_exo);
+    f(75) = AngII_T_tot - (AngII_T + AngII_T_exo);
+end
+
+if ~infusion.separate && strcmp(simulate.drug,'losartan')
+
+    % Need to change the structure of some of these equations, but
+    % First what to see if what we currently have is consistent with 
+    % Old simulations
+    
+    %%% --- Systemic (central compartment)
+    if no_reabs
+        f(42) = los_circ_p - (k_21*los_peri ...%(k_a_los/V_circ)*los_GI
+                       + (W_K/V_circ)*(phi_L*(los_Isf_Pt)...
+                       + (phi_RPF - phi_L - phi_U)*los_Pv) ...
+                       - ((W_K/V_circ)*phi_RPF + k_12 + k_cyt + k_elim)*los_circ...
+                       + k_diss_los*AT1R_los_memb_circ - k_ass_los*AT1R_memb_circ*los_circ);
+    else
+        f(42) = los_circ_p - ((k_a_los/V_circ)*los_GI + k_21*los_peri ...
+                       + (W_K/V_circ)*(phi_L*(los_Isf_Pt)...
+                       + (phi_RPF - phi_L - phi_U)*los_Pv) ...
+                       - ((W_K/V_circ)*phi_RPF + k_12 + k_cyt + k_elim)*los_circ...
+                       + k_diss_los*AT1R_los_memb_circ - k_ass_los*AT1R_memb_circ*los_circ);
+    end
+                   
+    f(43) = AT1R_los_memb_circ_p - (k_ass_los*AT1R_memb_circ*los_circ - k_diss_los*AT1R_los_memb_circ);
+                   
+    f(44) = exp3174_circ_p - ( k_cyt*los_circ...
+                              + (W_K/V_circ)*(phi_L*(exp3174_Isf_Pt)...
+                              +(phi_RPF - phi_L - phi_U)*exp3174_Pv)...
+                              - ((W_K/V_circ)*phi_RPF + k_12 + k_elim_exp)*exp3174_circ + k_21*exp3174_peri...
+                              + k_diss_exp*AT1R_exp3174_memb_circ - k_ass_exp*AT1R_memb_circ*exp3174_circ);
+          %(k_a_los/V_circ)*exp3174_GI +                
+    f(45) = AT1R_exp3174_memb_circ_p - (k_ass_exp*AT1R_memb_circ*exp3174_circ - k_diss_exp*AT1R_exp3174_memb_circ);
+    
+    %%% --- GI
+    kappa_los = 0;
+    if  strcmp(simulate.type,'oral; single') % IC = simulate.dose  
+        if ((t/t_res) < deltat) && no_reabs 
+            kappa_los = simulate.dose*k_a_los;
+        end
+   
+        f(46) = los_GI_p - (kappa_los - (k_a_los)*los_GI);
+    elseif strcmp(simulate.type, 'oral; drinking water')
+        if (t/t_res) < deltat 
+            kappa_los = simulate.dose/(deltat*1440);
+        end
+        f(46) = los_GI_p - (kappa_los - k_a_los*los_GI);
+    end
+    
+    f(47) = exp_3174_GI_p - 0;
+    
+    %%% --- Peripheral compartment
+    f(48) = los_peri_p - (k_12*los_circ - k_21*los_peri);
+    
+    f(49) = exp3174_peri_p - (k_12*exp3174_circ - k_21*exp3174_peri);
+    
+    %%% --- Kidney
+    
+    % Glomerular
+    f(50) = los_Isf_Gl_p - ((phi_L/V_Gl_Isf)*(los_circ - los_Isf_Gl) ...
+                         + k_diss_los*AT1R_los_memb_Gl -k_ass_los*los_Isf_Gl*AT1R_memb_Gl);
+                     
+    f(51) = AT1R_los_memb_Gl_p - (k_ass_los*AT1R_memb_Gl*los_Isf_Gl - k_diss_los*AT1R_los_memb_Gl);
+    
+    f(52) = exp3174_Isf_Gl_p - ((phi_L/V_Gl_Isf)*(exp3174_circ - exp3174_Isf_Gl) ...
+                             + k_diss_exp*AT1R_exp3174_memb_Gl -k_ass_exp*exp3174_Isf_Gl*AT1R_memb_Gl);
+                     
+    f(53) = AT1R_exp3174_memb_Gl_p - (k_ass_exp*AT1R_memb_Gl*exp3174_Isf_Gl - k_diss_exp*AT1R_exp3174_memb_Gl);
+    
+    % Peritubular
+    f(54) = los_Isf_Pt_p - ((k_diff_los/V_Pt_Isf)*los_Fl_Tb ...
+                         - ((phi_Pv+phi_L)/V_Pt_Isf)*los_Isf_Pt ...
+                         + k_diss_los*AT1R_los_memb_Pt - k_ass_los*los_Isf_Pt*AT1R_memb_Pt);
+                     
+    f(55) = AT1R_los_memb_Pt_p  - (k_ass_los*AT1R_memb_Pt*los_Isf_Pt - k_diss_los*AT1R_los_memb_Pt);
+    
+    f(56) = exp3174_Isf_Pt_p - ((k_diff_los/V_Pt_Isf)*exp3174_Fl_Tb ...
+                             - ((phi_Pv+phi_L)/V_Pt_Isf)*exp3174_Isf_Pt ...
+                             + k_diss_exp*AT1R_exp3174_memb_Pt - k_ass_exp*exp3174_Isf_Pt*AT1R_memb_Pt);
+    
+    f(57) = AT1R_exp3174_memb_Pt_p - (k_ass_exp*AT1R_memb_Pt*exp3174_Isf_Pt - k_diss_exp*AT1R_exp3174_memb_Pt);
+
+    % Tubular
+    f(58) = los_Fl_Tb_p - ((phi_GFR/V_Tb_Fl)*los_circ + (phi_L/V_Tb_Fl)*los_Isf_Gl...
+                        + k_diss_los*AT1R_los_memb_Tb - k_ass_los*los_Fl_Tb*AT1R_memb_Tb ...
+                        - ((phi_U + k_diff_los)/V_Tb_Fl)*los_Fl_Tb);
+                  
+    f(59) = AT1R_los_memb_Tb_p - (k_ass_los*AT1R_memb_Tb*los_Fl_Tb - k_diss_los*AT1R_los_memb_Tb);
+    
+    f(60) = exp3174_Fl_Tb_p - ((phi_GFR/V_Tb_Fl)*exp3174_circ + (phi_L/V_Tb_Fl)*exp3174_Isf_Gl...
+                            + k_diss_exp*AT1R_exp3174_memb_Tb - k_ass_exp*exp3174_Fl_Tb*AT1R_memb_Tb ...
+                            - ((phi_U + k_diff_los)/V_Tb_Fl)*exp3174_Fl_Tb);
+                    
+    f(61) = AT1R_exp3174_memb_Tb_p - (k_ass_exp*AT1R_memb_Tb*exp3174_Fl_Tb - k_diss_exp*AT1R_exp3174_memb_Tb);
+    
+    % Renal (blood) vasculature
+    f(62) = los_Pv_p - (((phi_RPF - phi_GFR - phi_L)/V_Pv)*los_circ ...
+                     + (phi_Pv/V_Pv)*los_Isf_Pt...
+                     - ((phi_RPF-phi_L-phi_U)/V_Pv)*los_Pv...
+                     - k_ass_los*AT1R_memb_Pv*los_Pv + k_diss_los*AT1R_los_memb_Pv); 
+                 
+    f(63) = AT1R_los_memb_Pv_p - (k_ass_los*AT1R_memb_Pv*los_Pv - k_diss_los*AT1R_los_memb_Pv);
+    
+    f(64) = exp3174_Pv_p - (((phi_RPF - phi_GFR - phi_L)/V_Pv)*exp3174_circ ...
+                     + (phi_Pv/V_Pv)*exp3174_Isf_Pt...
+                     - ((phi_RPF-phi_L-phi_U)/V_Pv)*exp3174_Pv...
+                     - k_ass_exp*AT1R_memb_Pv*exp3174_Pv + k_diss_exp*AT1R_exp3174_memb_Pv); 
+                 
+    f(65) = AT1R_exp3174_memb_Pv_p  - (k_ass_exp*AT1R_memb_Pv*exp3174_Pv - k_diss_exp*AT1R_exp3174_memb_Pv);
+    
+    % Whole kidney
+    f(66) = los_T - (V_Gl_Isf*los_Isf_Gl + V_Pt_Isf*los_Isf_Pt + V_Tb_Fl*los_Fl_Tb...
+                + V_Gl_Isf*AT1R_los_memb_Gl + V_Pt_Isf*AT1R_los_memb_Pt + V_Tb_Fl*AT1R_los_memb_Tb...
+                + V_Pv*(los_Pv+AT1R_los_memb_Pv));
+    f(67) = exp3174_T - (V_Gl_Isf*exp3174_Isf_Gl + V_Pt_Isf*exp3174_Isf_Pt + V_Tb_Fl*exp3174_Fl_Tb...
+                + V_Gl_Isf*AT1R_exp3174_memb_Gl + V_Pt_Isf*AT1R_exp3174_memb_Pt + V_Tb_Fl*AT1R_exp3174_memb_Tb...
+                + V_Pv*(exp3174_Pv+AT1R_exp3174_memb_Pv));
 end
 
 end
