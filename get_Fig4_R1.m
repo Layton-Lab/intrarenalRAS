@@ -23,13 +23,14 @@ fold_AGT_SD = 1.75 - 1.58;
 %% Simulation
 
 x0 = load('model_SS.mat').SSdata;
+xp0 = zeros(length(x0),1);
 varargin_noAGTfb = {'circ_AGT'};
 varargin_noACEfb = {'circ_ACE'};
 varargin_noReninfb = {'renin'};
 
-[S40,t40] = run_model(13,x0,40,'ng/min','SC',false);
-[S40_noAGTfb,t40_noAGTfb] = run_model(13,x0,40,'ng/min','SC',false,varargin_noAGTfb);
-[S40_noACEfb,t40_noACEfb] = run_model(13,x0,40,'ng/min','SC',false,varargin_noACEfb);
+[S40,t40] = run_model(13,x0,xp0,40,'ng/min','SC',false);
+[S40_noAGTfb,t40_noAGTfb] = run_model(13,x0,xp0,40,'ng/min','SC',false,varargin_noAGTfb);
+[S40_noACEfb,t40_noACEfb] = run_model(13,x0,xp0,40,'ng/min','SC',false,varargin_noACEfb);
 
 % Indices of key variables
 AGT_ind = 1;

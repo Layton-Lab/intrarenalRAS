@@ -3,7 +3,8 @@ function get_Fig8_R1(dose,unit,type,days)
 
 separate = false;
 x0 = [load('model_SS.mat').SSdata];
-[S_tot,t_tot] = run_model(days,x0,dose,unit,type,separate);
+xp0 = zeros(length(x0),1);
+[S_tot,t_tot] = run_model(days,x0,xp0,dose,unit,type,separate);
 
 [comp_intra_tot, comp_memb_tot, comp_isf_tot, comp_tot] = get_distributions(S_tot,separate);
 

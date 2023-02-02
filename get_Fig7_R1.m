@@ -11,13 +11,14 @@ fold_AngII_T_SD = AngII_T_SD./AngII_T_con;
 % Hypothesis 1
 
 x0 = load('model_SS.mat').SSdata_separate;
-[S40,t40] = run_model(13,x0,40,'ng/min','SC',true);
+xp0 = zeros(length(x0),1);
+[S40,t40] = run_model(13,x0,xp0,40,'ng/min','SC',true);
 varargin_noRenalfb = {'all_renal'};
-[S40_noRenalfb,t40_noRenalfb] = run_model(13,x0,40,'ng/min','SC',true,varargin_noRenalfb);
+[S40_noRenalfb,t40_noRenalfb] = run_model(13,x0,xp0, 40,'ng/min','SC',true,varargin_noRenalfb);
 
-AngII_T_exo_ind = 57;
+AngII_T_exo_ind = 58;
 AngII_T_endo_ind = 35;
-AngII_T_ind = 74;
+AngII_T_ind = 75;
 
 fold_AngII_T_sim_40 = S40(AngII_T_ind,:)/S40(AngII_T_ind,1);
 fold_AngII_T_endo_sim_40 = S40(AngII_T_endo_ind,:)/S40(AngII_T_ind,1);
@@ -28,7 +29,7 @@ fold_AngII_T_exo_sim_noRenalfb = S40_noRenalfb(AngII_T_exo_ind,:)/S40(AngII_T_in
 
 % Hypothesis 2
 
-[S402,t402] = run_model(13,x0,40,'ng/min','SC',true, {'hypothesis2'});
+[S402,t402] = run_model(13,x0,xp0,40,'ng/min','SC',true, {'hypothesis2'});
 varargin_noRenalfb = {'all_renal'};
 
 fold_AngII_T_sim_402 = S402(AngII_T_ind,:)/S402(AngII_T_ind,1);

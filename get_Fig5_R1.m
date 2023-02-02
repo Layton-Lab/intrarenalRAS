@@ -61,10 +61,11 @@ AngII_circ_SC = zeros(length(doses),2);
 AngII_circ_ind = 3;
 
 x0 = load('model_SS.mat').SSdata;
+xp0 = zeros(length(x0),1);
 
 for i = 1:length(doses)
     D = doses(i)
-    [S,t] = run_model(13,x0,D,'ng/kg/min','SC',false);
+    [S,t] = run_model(13,x0,xp0,D,'ng/kg/min','SC',false);
     [~,day_7] = min(abs(t - 7*ones(size(t))));
     S_day7  = S(:,day_7);
     S_day13 = S(:,end);
@@ -75,11 +76,12 @@ end
 
 % Figure inset 
 x0_sep = load('model_SS.mat').SSdata_separate;
-[S80,~] = run_model(13,x0_sep,80,'ng/min','SC',true);
+xp0_sep = zeros(length(x0_sep), 1);
+[S80,~] = run_model(13,x0_sep,xp0_sep,80,'ng/min','SC',true);
 
-fold_AngII_circ_endo_80_sim = S80(3,end)/S80(58,1);
-fold_AngII_circ_exo_80_sim = S80(41,end)/S80(58,1);
-fold_AngII_circ_tot_80_sim = S80(58,end)/S80(58,1);
+fold_AngII_circ_endo_80_sim = S80(3,end)/S80(59,1);
+fold_AngII_circ_exo_80_sim = S80(42,end)/S80(59,1);
+fold_AngII_circ_tot_80_sim = S80(59,end)/S80(59,1);
 
 %% Intravenous simulations
 
@@ -88,7 +90,7 @@ AngII_circ_IV_sim = zeros(length(doses_IV),1);
 
 for i = 1:length(doses_IV)
     D = doses_IV(i)
-    [S,t] = run_model(1,x0,D,'ng/min','IV',false);
+    [S,t] = run_model(1,x0,xp0,D,'ng/min','IV',false);
     [~,t_ind] = min(abs(24*t - 0.5*ones(size(t)))); 
     AngII_circ_IV_sim(i) = S(AngII_circ_ind,t_ind);
 end

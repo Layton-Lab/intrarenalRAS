@@ -1,4 +1,4 @@
-function [comp_intra_tot, comp_memb_tot, comp_isf_tot, comp_tot] = get_distributions(sim,separate)
+function [comp_intra_tot, comp_memb_tot, comp_isf_tot, comp_tot] = get_distributions(sim, separate)
 
 % Volumes
 V_Gl_Isf = 0.0019;
@@ -9,25 +9,25 @@ V_Tb_Fl = 0.102;
 V_Tb_Pt_cell = 0.294;
 
 % Indices
-Gl_Ce1_endo_i = 12; Gl_Ce1_exo_i = 45;
-Gl_Cell_endo_i = 13; Gl_Cell_exo_i = 46;
-Gl_Cs1_endo_i = 11; Gl_Cs1_exo_i = 44;
-Gl_Isf_endo_i = 9; Gl_Isf_exo_i = 43;
+Gl_Ce1_endo_i = 12; Gl_Ce1_exo_i = 47;
+Gl_Cell_endo_i = 13; Gl_Cell_exo_i = 48;
+Gl_Cs1_endo_i = 11; Gl_Cs1_exo_i = 46;
+Gl_Isf_endo_i = 9; Gl_Isf_exo_i = 45;
 
-Pt_Ce1_endo_i = 19; Pt_Ce1_exo_i = 49;
-Pt_Cell_endo_i = 20; Pt_Cell_exo_i = 50;
-Pt_Cs1_endo_i = 18; Pt_Cs1_exo_i = 48;
-Pt_Isf_endo_i = 17; Pt_Isf_exo_i = 47;
+Pt_Ce1_endo_i = 19; Pt_Ce1_exo_i = 51;
+Pt_Cell_endo_i = 20; Pt_Cell_exo_i = 52;
+Pt_Cs1_endo_i = 18; Pt_Cs1_exo_i = 50;
+Pt_Isf_endo_i = 17; Pt_Isf_exo_i = 49;
 
-Tb_Ce1_endo_i = 26; Tb_Ce1_exo_i = 53;
-Tb_Cell_endo_i = 27; Tb_Cell_exo_i = 54;
-Tb_Cs1_endo_i = 25; Tb_Cs1_exo_i = 52;
-Tb_Fl_endo_i = 24; Tb_Fl_exo_i = 51;
+Tb_Ce1_endo_i = 26; Tb_Ce1_exo_i = 55;
+Tb_Cell_endo_i = 27; Tb_Cell_exo_i = 56;
+Tb_Cs1_endo_i = 25; Tb_Cs1_exo_i = 54;
+Tb_Fl_endo_i = 24; Tb_Fl_exo_i = 53;
 
-Pv_Cs1_endo_i = 32; Pv_Cs1_exo_i = 56;
-Pv_endo_i = 31; Pv_exo_i = 55;
+Pv_Cs1_endo_i = 32; Pv_Cs1_exo_i = 58;
+Pv_endo_i = 31; Pv_exo_i = 57;
 
-T_endo_i = 35; T_exo_i = 57;
+T_endo_i = 35; T_exo_i = 59;
 
 if separate == true
     T = sim(T_endo_i,:) + sim(T_exo_i,:);

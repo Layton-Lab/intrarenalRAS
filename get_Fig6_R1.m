@@ -39,19 +39,20 @@ fold_AngII_baso_SD = AngII_baso_SD/AngII_baso_con;
 %% Fitting simulations
 
 x0 = load('model_SS.mat').SSdata_separate;
-[S80,t80] = run_model(13,x0,80,'ng/min','SC',true);
+xp0 = zeros(length(x0),1);
 
-x0 = load('model_SS.mat').SSdata_separate;
-[S802,t802] = run_model(13,x0,80,'ng/min','SC',true,{'hypothesis2'});
+[S80,t80] = run_model(13,x0,xp0,80,'ng/min','SC',true);
+
+[S802,t802] = run_model(13,x0,xp0,80,'ng/min','SC',true,{'hypothesis2'});
 
 % Indices of key variables
-AngII_T_exo_ind = 57;
+AngII_T_exo_ind = 58;
 AngII_T_endo_ind = 35;
-AngII_Isf_ind = 64;
-AT1R_AngII_cell_Tb_ind = 70;
-AngII_cell_Tb_ind = 71;
-AT1R_AngII_cell_Pt_ind = 66;
-AngII_cell_Pt_ind = 67;
+AngII_Isf_ind = 65;
+AT1R_AngII_cell_Tb_ind = 71;
+AngII_cell_Tb_ind = 72;
+AT1R_AngII_cell_Pt_ind = 67;
+AngII_cell_Pt_ind = 68;
 
 % Whole kidney
 fold_AngII_T_exo_sim = S80(AngII_T_exo_ind,end)/ S80(AngII_T_endo_ind,1);
